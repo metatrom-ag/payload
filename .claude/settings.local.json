@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:surrealdb.com)",
+      "Bash(mkdir:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm swc:*)",
+      "Bash(pnpm install:*)",
+      "Bash(curl:*)",
+      "Bash(grep:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node -c:*)",
+      "Bash(find:*)",
+      "Bash({} ;)",
+      "Bash(chmod:*)",
+      "Bash(./fix-all-lint.sh)",
+      "Bash(npx swc:*)",
+      "Bash(npx eslint:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

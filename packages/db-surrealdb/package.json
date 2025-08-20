@@ -1,0 +1,69 @@
+{
+  "name": "@payloadcms/db-surrealdb",
+  "version": "3.52.0",
+  "description": "SurrealDB database adapter for Payload",
+  "homepage": "https://payloadcms.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/payloadcms/payload.git",
+    "directory": "packages/db-surrealdb"
+  },
+  "license": "MIT",
+  "author": "Payload <dev@payloadcms.com> (https://payloadcms.com)",
+  "maintainers": [
+    {
+      "name": "Payload",
+      "email": "info@payloadcms.com",
+      "url": "https://payloadcms.com"
+    }
+  ],
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./src/index.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rimraf .dist && rimraf tsconfig.tsbuildinfo && pnpm build:types && pnpm build:swc",
+    "build:swc": "swc ./src -d ./dist --config-file .swcrc --strip-leading-paths",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist",
+    "clean": "rimraf -g {dist,*.tsbuildinfo}",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "prepack": "pnpm clean && pnpm turbo build",
+    "prepublishOnly": "pnpm clean && pnpm turbo build --filter=./"
+  },
+  "dependencies": {
+    "surrealdb": "^1.0.6",
+    "uuid": "10.0.0"
+  },
+  "devDependencies": {
+    "@payloadcms/eslint-config": "workspace:*",
+    "@swc/cli": "0.7.7",
+    "@swc/core": "1.11.29",
+    "@types/uuid": "10.0.0",
+    "payload": "workspace:*"
+  },
+  "peerDependencies": {
+    "payload": "workspace:*"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  }
+}
