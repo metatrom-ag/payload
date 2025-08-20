@@ -2,7 +2,7 @@ import type { FindDistinct } from 'payload'
 
 import type { SurrealDBAdapter } from './types.js'
 
-import {} from './queries/buildQuery.js'
+import { buildQuery } from './queries/buildQuery.js'
 import { handleError } from './utilities/handleError.js'
 
 export const findDistinct: FindDistinct = async function findDistinct(
@@ -19,6 +19,9 @@ export const findDistinct: FindDistinct = async function findDistinct(
   const tableName = this.collections[collectionSlug].tableName
 
   try {
+    // Set the current table for the adapter context
+    this.currentTable = tableName
+
     const { params, query: whereClause } = buildQuery({
       adapter: this,
       fields: collection.config.fields,

@@ -11,6 +11,8 @@ import type { Surreal } from 'surrealdb'
 export interface SurrealDBAdapter extends BaseDatabaseAdapter {
   client: Surreal
   collections: Record<CollectionSlug, SurrealDBCollection>
+  currentTable?: string
+  debug?: boolean
   globals: Record<string, SurrealDBGlobal>
   idType: 'custom' | 'ulid' | 'uuid'
   localesSuffix: string
@@ -37,6 +39,18 @@ export interface SurrealDBGlobal {
 
 export interface Args {
   /**
+   * Enable debug logging
+   * @default false
+   */
+  _debug?: boolean
+
+  /**
+   * Connection timeout in milliseconds
+   * @default 30000
+   */
+  _timeout?: number
+
+  /**
    * Enable this flag if you want to thread your own ID to create operation data
    * @default false
    */
@@ -62,12 +76,6 @@ export interface Args {
    * @default 'payload'
    */
   database?: string
-
-  /**
-   * Enable debug logging
-   * @default false
-   */
-  debug?: boolean
 
   /**
    * ID type to use
@@ -97,12 +105,6 @@ export interface Args {
    * @default '_rels'
    */
   relationshipsSuffix?: string
-
-  /**
-   * Connection timeout in milliseconds
-   * @default 30000
-   */
-  timeout?: number
 
   /**
    * Connection URL for SurrealDB

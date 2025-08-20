@@ -2,7 +2,7 @@ import type { Count } from 'payload'
 
 import type { SurrealDBAdapter } from './types.js'
 
-import {} from './queries/buildQuery.js'
+import { buildQuery } from './queries/buildQuery.js'
 import { getUserCountCache, setUserCountCache } from './utilities/cacheUtils.js'
 import { debounceOperation } from './utilities/debounce.js'
 import { handleError } from './utilities/handleError.js'
@@ -43,6 +43,9 @@ export const count: Count = async function count(
   const tableName = this.collections[collectionSlug].tableName
 
   try {
+    // Set the current table for the adapter context
+    this.currentTable = tableName
+
     // Build the query
     const { params, query: whereClause } = buildQuery({
       adapter: this,

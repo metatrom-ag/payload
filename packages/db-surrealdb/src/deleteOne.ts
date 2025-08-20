@@ -2,7 +2,7 @@ import type { DeleteOne } from 'payload'
 
 import type { SurrealDBAdapter } from './types.js'
 
-import {} from './queries/buildQuery.js'
+import { buildQuery } from './queries/buildQuery.js'
 import { handleError } from './utilities/handleError.js'
 import { escapeID, transformFromSurrealDB } from './utilities/transformID.js'
 
@@ -31,8 +31,14 @@ export const deleteOne: DeleteOne = async function deleteOne(
         return null
       }
 
+      payload.logger.info(
+        `[deleteOne] Successfully deleted 1 document from ${tableName} with id: ${id}`,
+      )
       return transformFromSurrealDB(deleted)
     }
+
+    // Set the current table for the adapter context
+    this.currentTable = tableName
 
     // Otherwise, find the document first then delete it
     const { params, query: whereClause } = buildQuery({
@@ -59,6 +65,12 @@ export const deleteOne: DeleteOne = async function deleteOne(
     const deleteQuery = `DELETE ${doc.id} RETURN BEFORE`
     const [deleteResult] = await this.client.query(deleteQuery)
     const deleted = deleteResult?.[0]
+
+    if (deleted) {
+      payload.logger.info(
+        `[deleteOne] Successfully deleted 1 document from ${tableName} with id: ${doc.id}`,
+      )
+    }
 
     return transformFromSurrealDB(deleted)
   } catch (error) {

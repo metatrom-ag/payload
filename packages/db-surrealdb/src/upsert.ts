@@ -2,7 +2,7 @@ import type { Upsert } from 'payload'
 
 import type { SurrealDBAdapter } from './types.js'
 
-import {} from './queries/buildQuery.js'
+import { buildQuery } from './queries/buildQuery.js'
 import { handleError } from './utilities/handleError.js'
 import { sanitizeData } from './utilities/sanitizeData.js'
 import { transformFromSurrealDB } from './utilities/transformID.js'
@@ -21,6 +21,9 @@ export const upsert: Upsert = async function upsert(
   const tableName = this.collections[collectionSlug].tableName
 
   try {
+    // Set the current table for the adapter context
+    this.currentTable = tableName
+
     // First, try to find existing document
     const { params: whereParams, query: whereClause } = buildQuery({
       adapter: this,

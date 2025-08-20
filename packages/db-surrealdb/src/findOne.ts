@@ -2,7 +2,7 @@ import type { FindOne } from 'payload'
 
 import type { SurrealDBAdapter } from './types.js'
 
-import {} from './queries/buildQuery.js'
+import { buildQuery } from './queries/buildQuery.js'
 import { handleError } from './utilities/handleError.js'
 import { transformFromSurrealDB } from './utilities/transformID.js'
 
@@ -28,7 +28,7 @@ export const findOne: FindOne = async function findOne(
     // Log for debugging auth issues
     if (collectionSlug === 'users') {
       payload.logger.debug(
-        `FindOne for users - where: ${JSON.stringify(where)}, select: ${JSON.stringify(select)}`,
+        `FindOne for users - where: ${JSON.stringify(where)}, select: ${JSON.stringify(_select)}`,
       )
     }
 
@@ -49,7 +49,7 @@ export const findOne: FindOne = async function findOne(
       const doc = result?.[0]
 
       if (!doc) {
-        if (collectionSlug === 'users' && select?.lockUntil) {
+        if (collectionSlug === 'users' && _select?.lockUntil) {
           payload.logger.error(`FindOne by ID returned null - query: ${query}`)
         }
         return null
@@ -58,12 +58,15 @@ export const findOne: FindOne = async function findOne(
       // Transform document
       const transformed = transformFromSurrealDB(doc)
 
-      if (collectionSlug === 'users' && select?.lockUntil) {
+      if (collectionSlug === 'users' && _select?.lockUntil) {
         payload.logger.debug(`FindOne returning user:`, transformed)
       }
 
       return transformed
     }
+
+    // Set the current table for the adapter context
+    this.currentTable = tableName
 
     // Build the query for non-ID queries
     const { params, query: whereClause } = buildQuery({
@@ -84,7 +87,7 @@ export const findOne: FindOne = async function findOne(
     const doc = result?.[0]
 
     if (!doc) {
-      if (collectionSlug === 'users' && select?.lockUntil) {
+      if (collectionSlug === 'users' && _select?.lockUntil) {
         payload.logger.error(`FindOne returned null for user - query: ${query}, params:`, params)
       }
       return null
@@ -93,7 +96,7 @@ export const findOne: FindOne = async function findOne(
     // Transform document
     const transformed = transformFromSurrealDB(doc)
 
-    if (collectionSlug === 'users' && select?.lockUntil) {
+    if (collectionSlug === 'users' && _select?.lockUntil) {
       payload.logger.debug(`FindOne returning user:`, transformed)
     }
 

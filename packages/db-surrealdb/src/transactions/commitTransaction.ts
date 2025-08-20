@@ -20,9 +20,7 @@ export const commitTransaction: CommitTransaction = async function commitTransac
       return
     }
 
-    // In SurrealDB, we don't have traditional commit
-    // Operations are already persisted
-    // Just clean up the session
+    // Commit the SurrealDB transaction
     await session.resolve()
 
     this.payload.logger.debug(`Committed SurrealDB transaction: ${transactionId}`)

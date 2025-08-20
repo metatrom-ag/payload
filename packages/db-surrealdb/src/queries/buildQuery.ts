@@ -1,5 +1,7 @@
 import type { Field, Where } from 'payload'
 
+import { RecordId } from 'surrealdb'
+
 import type { SurrealDBAdapter } from '../types.js'
 
 interface BuildQueryArgs {
@@ -9,7 +11,7 @@ interface BuildQueryArgs {
 }
 
 interface BuildQueryResult {
-  params: Record<string, any>
+  params: Record<string, unknown>
   query: string
 }
 
@@ -18,8 +20,8 @@ export const buildQuery = ({ adapter, fields, where }: BuildQueryArgs): BuildQue
     return { params: {}, query: '' }
   }
 
-  const params: Record<string, any> = {}
-  const conditions = buildWhereConditions(where, fields, params)
+  const params: Record<string, unknown> = {}
+  const conditions = buildWhereConditions(adapter, where, fields, params)
 
   // Don't return empty parentheses
   if (!conditions || conditions === '()') {
@@ -33,9 +35,10 @@ export const buildQuery = ({ adapter, fields, where }: BuildQueryArgs): BuildQue
 }
 
 function buildWhereConditions(
+  adapter: SurrealDBAdapter,
   where: Where,
   fields: Field[],
-  params: Record<string, any>,
+  params: Record<string, unknown>,
   paramPrefix = '',
 ): string {
   const conditions: string[] = []
@@ -44,7 +47,7 @@ function buildWhereConditions(
     // Handle logical operators
     if (key === 'and' || key === 'AND') {
       const andConditions = (value as Where[]).map((condition, index) =>
-        buildWhereConditions(condition, fields, params, `${paramPrefix}and${index}_`),
+        buildWhereConditions(adapter, condition, fields, params, `${paramPrefix}and${index}_`),
       )
       if (andConditions.length > 0) {
         conditions.push(`(${andConditions.join(' AND ')})`)
@@ -54,7 +57,7 @@ function buildWhereConditions(
 
     if (key === 'or' || key === 'OR') {
       const orConditions = (value as Where[]).map((condition, index) =>
-        buildWhereConditions(condition, fields, params, `${paramPrefix}or${index}_`),
+        buildWhereConditions(adapter, condition, fields, params, `${paramPrefix}or${index}_`),
       )
       if (orConditions.length > 0) {
         conditions.push(`(${orConditions.join(' OR ')})`)
@@ -63,8 +66,8 @@ function buildWhereConditions(
     }
 
     // Handle field conditions
-    const field = fields.find((f: any) => f.name === key)
-    const fieldCondition = buildFieldCondition(key, value, field, params, paramPrefix)
+    const field = fields.find((f) => f.name === key)
+    const fieldCondition = buildFieldCondition(adapter, key, value, field, params, paramPrefix)
     if (fieldCondition) {
       conditions.push(fieldCondition)
     }
@@ -74,26 +77,33 @@ function buildWhereConditions(
 }
 
 function buildFieldCondition(
+  adapter: SurrealDBAdapter,
   fieldName: string,
-  condition: any,
-  field: any,
-  params: Record<string, any>,
+  condition: unknown,
+  field: Field | undefined,
+  params: Record<string, unknown>,
   paramPrefix: string,
 ): string {
-  // Special handling for nested array queries (e.g., sessions.id)
+  // Special handling for nested field queries (e.g., document.relationTo, sessions.id)
   if (fieldName.includes('.')) {
-    const [arrayField, nestedField] = fieldName.split('.')
+    const parts = fieldName.split('.')
 
-    // For array contains queries in SurrealDB
+    // For nested object field queries (e.g., document.relationTo)
     if (typeof condition === 'object' && condition !== null) {
       for (const [operator, value] of Object.entries(condition)) {
         if (operator === 'equals') {
-          const paramName = `${paramPrefix}${arrayField}_${nestedField}_${operator}`
+          const paramName = `${paramPrefix}${parts.join('_')}_${operator}`
           params[paramName] = value
-          // SurrealDB syntax for checking if array contains object with field
-          return `${arrayField}[WHERE ${nestedField} = $${paramName}]`
+          // Use direct dot notation for nested object fields
+          // This handles both object properties and array filtering
+          return `${fieldName} = $${paramName}`
         }
       }
+    } else {
+      // Simple equality for nested fields
+      const paramName = `${paramPrefix}${parts.join('_')}`
+      params[paramName] = condition
+      return `${fieldName} = $${paramName}`
     }
   }
 
@@ -149,8 +159,31 @@ function buildFieldCondition(
 
       case 'in':
         if (Array.isArray(value)) {
-          params[paramName] = value
-          conditions.push(`${fieldName} IN $${paramName}`)
+          // For ID field in SurrealDB, we need special handling
+          if (fieldName === 'id' && value.length > 0 && adapter.currentTable) {
+            // Use RecordId instances for safe parameterization
+            const tableName = adapter.currentTable
+
+            if (adapter.debug) {
+              adapter.payload?.logger.debug(`[buildQuery] Building IN clause for IDs:`, value)
+              adapter.payload?.logger.debug(`[buildQuery] Table name: ${String(tableName)}`)
+            }
+
+            // Create RecordId instances for each ID
+            const recordIds = value.map((id: unknown) => new RecordId(tableName, String(id)))
+
+            // Use the IN operator with RecordId array
+            params[paramName] = recordIds
+            conditions.push(`id IN $${paramName}`)
+
+            if (adapter.debug) {
+              adapter.payload?.logger.debug(`[buildQuery] Generated IN clause: id IN $${paramName}`)
+              adapter.payload?.logger.debug(`[buildQuery] RecordIds:`, recordIds)
+            }
+          } else {
+            params[paramName] = value
+            conditions.push(`${fieldName} IN $${paramName}`)
+          }
         }
         break
 

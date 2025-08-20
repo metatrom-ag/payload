@@ -2,7 +2,7 @@ import type { UpdateMany } from 'payload'
 
 import type { SurrealDBAdapter } from './types.js'
 
-import {} from './queries/buildQuery.js'
+import { buildQuery } from './queries/buildQuery.js'
 import { handleError } from './utilities/handleError.js'
 import { sanitizeData } from './utilities/sanitizeData.js'
 import { transformFromSurrealDB } from './utilities/transformID.js'
@@ -32,6 +32,9 @@ export const updateMany: UpdateMany = async function updateMany(
     // Add updated timestamp
     sanitized.updatedAt = new Date().toISOString()
 
+    // Set the current table for the adapter context
+    this.currentTable = tableName
+
     // Build the query
     const { params: whereParams, query: whereClause } = buildQuery({
       adapter: this,
@@ -54,7 +57,7 @@ export const updateMany: UpdateMany = async function updateMany(
     const updated = result || []
 
     // Transform back to Payload format
-    return updated.map((doc: any) => transformFromSurrealDB(doc))
+    return updated.map((doc: unknown) => transformFromSurrealDB(doc as Record<string, unknown>))
   } catch (error) {
     handleError({ collection: collectionSlug, error, operation: 'updateMany' })
     throw error

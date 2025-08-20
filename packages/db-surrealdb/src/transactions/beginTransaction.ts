@@ -9,12 +9,12 @@ export const beginTransaction: BeginTransaction = function beginTransaction(
   _options = {},
 ) {
   try {
-    // Generate a unique transaction ID
+    // Generate a unique transaction ID for tracking
     const transactionId = uuidv4()
 
-    // SurrealDB doesn't have traditional transactions like SQL databases
-    // Instead, we'll use a transaction ID to group operations
-    // and potentially use SurrealDB's RELATE statements for consistency
+    // Note: SurrealDB's JavaScript client doesn't support transaction commands over WebSocket
+    // Each query is atomic by default in SurrealDB
+    // We'll track the transaction ID for session management
 
     // Store the transaction ID
     this.transactionID = transactionId
@@ -27,18 +27,21 @@ export const beginTransaction: BeginTransaction = function beginTransaction(
     this.sessions[transactionId] = {
       db: this.client,
       reject: () => {
-        // Cleanup on reject
+        // In SurrealDB, individual operations are atomic
+        // We can't rollback multiple operations after they're committed
+        // Cleanup session
         delete this.sessions![transactionId]
         this.transactionID = undefined
       },
       resolve: () => {
-        // Cleanup on resolve
+        // In SurrealDB, operations are already committed
+        // Cleanup session
         delete this.sessions![transactionId]
         this.transactionID = undefined
       },
     }
 
-    this.payload.logger.debug(`Started SurrealDB transaction: ${transactionId}`)
+    this.payload.logger.debug(`Started transaction session: ${transactionId}`)
 
     return transactionId
   } catch (error) {

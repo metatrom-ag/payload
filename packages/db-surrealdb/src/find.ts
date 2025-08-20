@@ -2,7 +2,7 @@ import type { Find } from 'payload'
 
 import type { SurrealDBAdapter } from './types.js'
 
-import {} from './queries/buildQuery.js'
+import { buildQuery } from './queries/buildQuery.js'
 import { handleError } from './utilities/handleError.js'
 import { transformFromSurrealDB } from './utilities/transformID.js'
 
@@ -39,6 +39,9 @@ export const find: Find = async function find(
     if (collectionSlug === 'users') {
       payload.logger.debug(`Find users where: ${JSON.stringify(where)}`)
     }
+
+    // Set the current table for the adapter context
+    this.currentTable = tableName
 
     // Build the query
     const { params, query: whereClause } = buildQuery({
@@ -113,7 +116,9 @@ export const find: Find = async function find(
     }
 
     // Transform documents
-    const transformedDocs = (docs || []).map((doc: any) => transformFromSurrealDB(doc))
+    const transformedDocs = (docs || []).map((doc: unknown) =>
+      transformFromSurrealDB(doc as Record<string, unknown>),
+    )
 
     return {
       docs: transformedDocs,

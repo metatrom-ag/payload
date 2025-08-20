@@ -103,6 +103,7 @@ export function surrealDBAdapter(args: Args = {}): DatabaseAdapterObj<SurrealDBA
     const adapterConfig = {
       auth,
       database,
+      debug: _debug,
       namespace,
       url,
     }

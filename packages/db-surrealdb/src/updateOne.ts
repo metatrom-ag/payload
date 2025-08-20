@@ -2,7 +2,7 @@ import type { UpdateOne } from 'payload'
 
 import type { SurrealDBAdapter } from './types.js'
 
-import {} from './queries/buildQuery.js'
+import { buildQuery } from './queries/buildQuery.js'
 import { handleError } from './utilities/handleError.js'
 import { sanitizeData } from './utilities/sanitizeData.js'
 import { escapeID, extractID, transformFromSurrealDB } from './utilities/transformID.js'
@@ -43,12 +43,15 @@ export const updateOne: UpdateOne = async function updateOne(
     sanitized.updatedAt = new Date()
 
     let query: string
-    let params: any = { data: sanitized }
+    let params: Record<string, unknown> = { data: sanitized }
 
     if (id) {
       // Update by ID - escape it properly
       query = `UPDATE ${tableName}:${escapeID(id)} MERGE $data RETURN *`
     } else if (where) {
+      // Set the current table for the adapter context
+      this.currentTable = tableName
+
       // Update by where clause
       const { params: whereParams, query: whereClause } = buildQuery({
         adapter: this,
@@ -84,6 +87,9 @@ export const updateOne: UpdateOne = async function updateOne(
 
     // If still no document and we have a where clause, try to find it
     if (!updated && where && returning !== false) {
+      // Set the current table for the adapter context
+      this.currentTable = tableName
+
       const { params: whereParams, query: whereClause } = buildQuery({
         adapter: this,
         fields: collection.config.fields,

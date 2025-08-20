@@ -101,7 +101,7 @@ async function ensureTablesExist(this: SurrealDBAdapter) {
       )
       payload.logger.info(`Ensured global table exists: ${tableName}`)
     } catch (_error) {
-      const errorMsg = (_error as any)?.message || String(_error)
+      const errorMsg = (_error as Error)?.message || String(_error)
       if (!errorMsg.includes('already exists')) {
         payload.logger.error({ err: _error, msg: `Failed to create global table ${tableName}:` })
       }
@@ -151,7 +151,7 @@ async function ensureTablesExist(this: SurrealDBAdapter) {
     )
     payload.logger.info('Ensured migrations table exists')
   } catch (_error) {
-    const errorMsg = (_error as any)?.message || String(_error)
+    const errorMsg = (_error as Error)?.message || String(_error)
     if (!errorMsg.includes('already exists')) {
       payload.logger.error({ err: _error, msg: `Failed to create migrations table:` })
     }
@@ -177,7 +177,7 @@ async function ensureTablesExist(this: SurrealDBAdapter) {
     )
     payload.logger.info('Ensured preferences table exists')
   } catch (_error) {
-    const errorMsg = (_error as any)?.message || String(_error)
+    const errorMsg = (_error as Error)?.message || String(_error)
     if (!errorMsg.includes('already exists')) {
       payload.logger.error({ err: _error, msg: `Failed to create preferences table:` })
     }
@@ -231,6 +231,10 @@ export const init: Init = async function init(this: SurrealDBAdapter) {
     // Create tables/schemas in SurrealDB
     await ensureTablesExist.call(this)
 
+    if (this.debug) {
+      // eslint-disable-next-line no-console
+      console.log('[SurrealDB] Adapter initialized - Debug mode enabled')
+    }
     payload.logger.info('SurrealDB adapter initialized successfully')
   } catch (_error) {
     payload.logger.error({ err: _error, msg: 'Failed to initialize SurrealDB adapter:' })
